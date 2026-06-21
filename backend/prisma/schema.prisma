@@ -1,0 +1,64 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          Int            @id @default(autoincrement())
+  name        String
+  email       String         @unique
+  password    String
+  role        String         // "STUDENT", "STAFF", "ADMIN"
+  department  String?        // e.g., "Computer Science", "Electrical", etc.
+  createdAt   DateTime       @default(now())
+  
+  // Relations
+  complaints  Complaint[]    @relation("StudentComplaints")
+  assignments Complaint[]    @relation("StaffComplaints")
+  comments    Comment[]
+  notifications Notification[]
+}
+
+model Complaint {
+  id          Int            @id @default(autoincrement())
+  title       String
+  description String
+  category    String         // "Hostel", "Classroom", "Laboratory", "Library", "Transport", "Canteen", "Water Supply", "Electricity", "Internet/Wi-Fi", "Sports", "Others"
+  priority    String         // "LOW", "MEDIUM", "HIGH"
+  status      String         @default("PENDING") // "PENDING", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"
+  image       String?        // Filename or path for uploaded image
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Foreign Keys & Relations
+  studentId   Int
+  student     User           @relation("StudentComplaints", fields: [studentId], references: [id])
+  
+  staffId     Int?
+  staff       User?          @relation("StaffComplaints", fields: [staffId], references: [id])
+
+  comments    Comment[]
+}
+
+model Comment {
+  id          Int            @id @default(autoincrement())
+  complaintId Int
+  complaint   Complaint      @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message     String
+  createdAt   DateTime       @default(now())
+}
+
+model Notification {
+  id          Int            @id @default(autoincrement())
+  userId      Int
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message     String
+  isRead      Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+}
