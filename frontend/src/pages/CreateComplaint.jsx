@@ -9,7 +9,8 @@ import {
   AlertTriangle, 
   CheckCircle,
   FileImage,
-  X
+  X,
+  Camera
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -36,6 +37,22 @@ const CreateComplaint = () => {
   const [priority, setPriority] = useState('');
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+
+  // Device detection for camera restriction
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkDevice = () => {
+      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+      const isMobileUA = mobileRegex.test(navigator.userAgent);
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobile(isMobileUA || isSmallScreen);
+    };
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
 
   // AI states
   const [aiLoading, setAiLoading] = useState(false);
@@ -238,17 +255,32 @@ const CreateComplaint = () => {
               Attach Proof Photo (Optional)
             </label>
             {!imagePreview ? (
-              <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center hover:bg-slate-50/40 dark:hover:bg-slate-950/10 transition-colors duration-200 relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">Click or drag image file here</p>
-                <p className="text-[10px] text-slate-400 mt-1">PNG, JPG, JPEG, WEBP (Max 5MB)</p>
-              </div>
+              isMobile ? (
+                <div className="border-2 border-dashed border-indigo-200 dark:border-indigo-950/40 rounded-2xl p-6 text-center hover:bg-indigo-50/20 dark:hover:bg-indigo-950/5 transition-colors duration-200 relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <Camera className="w-8 h-8 text-indigo-500 mx-auto mb-2 animate-pulse" />
+                  <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-400">Tap to Take Live Photo</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-550 mt-1">Direct camera capture only &middot; Gallery disabled</p>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center hover:bg-slate-50/40 dark:hover:bg-slate-950/10 transition-colors duration-200 relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-350">Click or drag image file here</p>
+                  <p className="text-[10px] text-slate-400 mt-1">PNG, JPG, JPEG, WEBP (Max 5MB)</p>
+                </div>
+              )
             ) : (
               <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 max-h-52 bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
                 <img src={imagePreview} alt="Upload preview" className="object-contain max-h-52" />
