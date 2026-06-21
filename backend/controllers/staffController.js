@@ -58,10 +58,19 @@ const updateComplaintStatus = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized. You are not assigned to this complaint.' });
     }
 
+    // Extract resolution image if present
+    const resolutionImage = req.file ? req.file.filename : undefined;
+
+    // Update data object
+    const updateData = { status };
+    if (resolutionImage) {
+      updateData.resolutionImage = resolutionImage;
+    }
+
     // Update complaint
     const updatedComplaint = await prisma.complaint.update({
       where: { id: complaintId },
-      data: { status },
+      data: updateData,
       include: {
         student: { select: { id: true, name: true, email: true } }
       }
@@ -81,7 +90,11 @@ const updateComplaintStatus = async (req, res) => {
     // Create notification for student
     let notificationMsg = `Your complaint "${complaint.title}" status has been updated to "${status}" by ${staffName}.`;
     if (status === 'RESOLVED') {
-      notificationMsg = `Your complaint "${complaint.title}" has been RESOLVED. Please check and provide feedback or close the ticket.`;
+      if (resolutionImage) {
+        notificationMsg = `Your complaint "${complaint.title}" has been RESOLVED. A resolution proof image has been uploaded. Please check and provide feedback or close the ticket.`;
+      } else {
+        notificationMsg = `Your complaint "${complaint.title}" has been RESOLVED. Please check and provide feedback or close the ticket.`;
+      }
     }
 
     await prisma.notification.create({

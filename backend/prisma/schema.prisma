@@ -31,6 +31,7 @@ model Complaint {
   priority    String         // "LOW", "MEDIUM", "HIGH"
   status      String         @default("PENDING") // "PENDING", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"
   image       String?        // Filename or path for uploaded image
+  resolutionImage String?    // Filename or path for resolution proof image
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 

@@ -14,7 +14,11 @@ import {
   MessageSquare,
   AlertTriangle,
   Briefcase,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  X,
+  Loader,
+  FileImage
 } from 'lucide-react';
 
 const STATUS_STEPS = ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
@@ -64,6 +68,29 @@ const ComplaintDetails = () => {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [resolutionNote, setResolutionNote] = useState('');
   const [statusLoading, setStatusLoading] = useState(false);
+  const [resolutionImage, setResolutionImage] = useState(null);
+  const [resolutionImagePreview, setResolutionImagePreview] = useState('');
+
+  const handleResolutionImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image file is too large (maximum 5MB).');
+        return;
+      }
+      setResolutionImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setResolutionImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeResolutionImage = () => {
+    setResolutionImage(null);
+    setResolutionImagePreview('');
+  };
 
   const fetchComplaintDetails = async () => {
     try {
@@ -153,20 +180,43 @@ const ComplaintDetails = () => {
   // Staff Status Update
   const handleStatusSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation: Require resolution proof image when resolving
+    if (selectedStatus === 'RESOLVED' && !resolutionImage) {
+      alert('Please upload a resolution proof image to mark this ticket as RESOLVED.');
+      return;
+    }
+
     setStatusLoading(true);
     try {
-      const res = await api.put(`/staff/complaints/${id}/status`, {
-        status: selectedStatus,
-        resolutionNote: resolutionNote
-      });
+      let res;
+      if (selectedStatus === 'RESOLVED' && resolutionImage) {
+        const formData = new FormData();
+        formData.append('status', selectedStatus);
+        formData.append('resolutionNote', resolutionNote);
+        formData.append('resolutionImage', resolutionImage);
+
+        res = await api.put(`/staff/complaints/${id}/status`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      } else {
+        res = await api.put(`/staff/complaints/${id}/status`, {
+          status: selectedStatus,
+          resolutionNote: resolutionNote
+        });
+      }
       
       // Update details to get the new status and the comments logged by resolutionNote
       await fetchComplaintDetails();
       setResolutionNote('');
+      setResolutionImage(null);
+      setResolutionImagePreview('');
       alert('Ticket status updated successfully!');
     } catch (err) {
       console.error(err);
-      alert('Failed to update status.');
+      alert(err.response?.data?.message || 'Failed to update status.');
     } finally {
       setStatusLoading(false);
     }
@@ -304,6 +354,24 @@ const ComplaintDetails = () => {
                     src={`/uploads/${complaint.image}`} 
                     alt="Complaint Proof" 
                     className="object-contain max-h-96 w-full"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Resolution Proof Attachment Image */}
+            {complaint.resolutionImage && (
+              <div className="space-y-2 pt-4 border-t border-emerald-150 dark:border-emerald-900/40">
+                <div className="flex items-center gap-1.5 text-emerald-650 dark:text-emerald-450 font-bold uppercase text-xs pl-0.5">
+                  <CheckCircle2 className="w-4.5 h-4.5" />
+                  <span>Resolution Proof (Uploaded by Staff)</span>
+                </div>
+                <div className="border border-emerald-200 dark:border-emerald-900/40 rounded-2xl overflow-hidden bg-emerald-50/10 dark:bg-emerald-950/10 max-h-96 flex items-center justify-center p-2.5">
+                  <img 
+                    src={`/uploads/${complaint.resolutionImage}`} 
+                    alt="Resolution Proof" 
+                    className="object-contain max-h-96 w-full rounded-xl"
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 </div>
@@ -489,6 +557,40 @@ const ComplaintDetails = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-950/20 text-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 dark:text-white"
                   />
                 </div>
+
+                {/* Resolution Image Upload (Mandatory when status is RESOLVED) */}
+                {selectedStatus === 'RESOLVED' && (
+                  <div className="space-y-1.5 animate-slide-up">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1">
+                      Resolution Proof Photo <span className="text-rose-500">*</span>
+                    </label>
+                    {!resolutionImagePreview ? (
+                      <div className="border-2 border-dashed border-slate-250 dark:border-slate-800 rounded-2xl p-4 text-center hover:bg-slate-50/40 dark:hover:bg-slate-950/10 transition-colors duration-200 relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleResolutionImageChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          required
+                        />
+                        <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1.5" />
+                        <p className="text-xs font-semibold text-slate-650 dark:text-slate-350">Click or drag proof photo</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">PNG, JPG, WEBP (Max 5MB)</p>
+                      </div>
+                    ) : (
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 max-h-40 bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+                        <img src={resolutionImagePreview} alt="Resolution proof preview" className="object-contain max-h-40" />
+                        <button
+                          type="button"
+                          onClick={removeResolutionImage}
+                          className="absolute top-2 right-2 p-1 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white transition-all cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <button
                   type="submit"
