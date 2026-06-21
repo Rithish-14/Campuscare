@@ -12,7 +12,7 @@ import {
   Briefcase
 } from 'lucide-react';
 
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = ({ isOpen, toggleSidebar, onProfileClick }) => {
   const { user, logout } = useAuth();
 
   if (!user) return null;
@@ -62,14 +62,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </div>
 
         {/* User Card */}
-        <div className="mx-4 my-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/40">
+        <div 
+          onClick={onProfileClick}
+          className="mx-4 my-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all duration-200 cursor-pointer group"
+          title="View profile details"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center font-semibold text-indigo-700 dark:text-indigo-400">
+            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center font-semibold text-indigo-700 dark:text-indigo-400 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/60 transition-all duration-200">
               {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
             </div>
             <div className="overflow-hidden">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{user.name}</h4>
-              <p className="text-xs text-slate-400 dark:text-slate-500 capitalize flex items-center gap-1 mt-0.5">
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{user.name}</h4>
+              <p className="text-xs text-slate-400 dark:text-slate-500 capitalize flex items-center gap-1 mt-0.5 truncate">
                 {user.role === 'ADMIN' && <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />}
                 {user.role.toLowerCase()}
               </p>
