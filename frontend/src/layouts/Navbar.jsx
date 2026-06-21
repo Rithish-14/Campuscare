@@ -12,7 +12,7 @@ import {
   Loader
 } from 'lucide-react';
 
-const Navbar = ({ toggleSidebar }) => {
+const Navbar = ({ toggleSidebar, onProfileClick }) => {
   const { user } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const [notifications, setNotifications] = useState([]);
@@ -83,10 +83,14 @@ const Navbar = ({ toggleSidebar }) => {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <div className="hidden sm:block">
+        <button 
+          onClick={onProfileClick}
+          className="hidden sm:block text-left hover:opacity-85 transition-opacity cursor-pointer group"
+          title="View profile details"
+        >
           <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Welcome Back</p>
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name}</h2>
-        </div>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{user?.name}</h2>
+        </button>
       </div>
 
       {/* Right section: Theme, Notifications, Avatar */}
@@ -175,6 +179,15 @@ const Navbar = ({ toggleSidebar }) => {
             </div>
           )}
         </div>
+
+        {/* User Profile Trigger (Avatar) */}
+        <button
+          onClick={onProfileClick}
+          className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center font-semibold text-indigo-700 dark:text-indigo-400 border border-slate-200/50 dark:border-slate-800/80 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition-all duration-200 cursor-pointer shadow-xs shrink-0"
+          title="View Profile Details"
+        >
+          {user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'U'}
+        </button>
       </div>
     </header>
   );
